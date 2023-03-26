@@ -72,7 +72,7 @@ Updated for 2023 with new slash commands, using [nextcord](https://github.com/ne
 * Represents many methods involving automating the participation sheet.
 * Contains a class `Subsheet` which represents the separate 'Masterlist' and 'Misc' sheets separately.
 
-## semster.py
+## semester.py
 * Not yet used, will be used to for automating the creation of participation sheets every semester.
 
 ## sheets.py
