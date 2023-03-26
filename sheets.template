@@ -1,0 +1,33 @@
+{
+    "id": "",
+    "templateid": "unset",
+    "defaulttitle": "",
+    "subsheets": {
+        "Masterlist": {
+            "EVENTSROW": 1,
+            "TOTAL": 2,
+            "MEAN": 3,
+            "MEDIAN": 4,
+            "QUARTILE1": 5,
+            "USERDATASTART": 6,
+            "NAME": "A",
+            "CODENAMES": "B",
+            "POINTS":"C",
+            "EVENTSTOTAL":"D",
+            "MASTERLISTMISC": "E",
+            "EVENTSSTART": "F"
+        },
+        "Misc": {
+            "EVENTSROW": 1,
+            "TOTAL": 2,
+            "MEAN": 3,
+            "MEDIAN": 4,
+            "QUARTILE1": 5,
+            "USERDATASTART": 6,
+            "NAME": "A",
+            "CODENAMES": "B",
+            "POINTS":"C",
+            "EVENTSSTART": "F"
+        }
+    }
+}

@@ -43,6 +43,7 @@ class General(commands.Cog):
     @nextcord.slash_command(name = "help", description = "Help for using the bot", guild_ids=serverIdList)
     async def help(self, interaction: Interaction):
         help_message = '''Thanks for using **The Nauticock** bot. 
+    
 The bot was originally written in 2020, but as of 2023 has been completely re-written from the ground up to work with the new discord bot API and using nextcord rather than discord.py. Most of its uses are for behind the scenes work, but has some public commands as well.
 
 Some commands that may be useful are:
