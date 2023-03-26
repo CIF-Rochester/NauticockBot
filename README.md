@@ -52,10 +52,13 @@ Updated for 2023 with new slash commands, using [nextcord](https://github.com/ne
 ## Participation.py
 
 * For Board members only, used to grant members participation points automatically.
-* /pnew <eventname> <people> <optionaldate>
-  * Grants participation points to the people under the target event with name: "eventname date". If a date is not provided, the current date will be used. Can create events
+* /pnew <eventname> <people> <optionaldate> <misc>
+  * Grants participation points to the people under the target event with name: "eventname date". If a date is not provided, the current date will be used. Can create events.
+  * If misc is true, the misc sheet will be used instead.
 * /pgrant <people>
   * Does the same thing as /pnew only if /pnew has been run once. Grants a point to the people provided to the last event /pnew accessed.
+* /pusernew <first and last name> <codename>
+  * Adds a person to the participation sheet. Currently does not sort.
 
 # Sheets modules
 

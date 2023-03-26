@@ -1,3 +1,5 @@
+from typing import List, Any
+
 from sheets.commandoutput import GivePointsOutput
 import sheets.base26 as base26
 from sheets.semester import Semester
@@ -25,7 +27,10 @@ class Subsheet:
     USERDATASTART = 6
     # Where names show up
     NAME = "A"
+    CODENAME = "B"
     EVENTSSTART = "F"
+    GID = "0"
+    USERSTATSMATH: list[str] = list()
 
     sheetname = ""
 
@@ -42,6 +47,9 @@ class Subsheet:
         self.USERDATASTART = jsonmap["USERDATASTART"]
         self.NAME = jsonmap["NAME"]
         self.EVENTSSTART = jsonmap["EVENTSSTART"]
+        self.CODENAME = jsonmap["CODENAME"]
+        self.GID = jsonmap["GID"]
+        self.USERSTATSMATH = jsonmap["USERSTATSMATH"]
 
     """
         Gets the next empty column in the desired sheet. A column is empty if the first row does not contain values.
@@ -58,7 +66,11 @@ class Subsheet:
         # If not open, check the next column.
         else:
             return self.next_open_column(col)
-
+    """
+        Gets the next empty user name row.
+    """
+    def next_open_user_row(self):
+        return self.USERDATASTART + len(self.get_names())
     """
         Creates a new event in the desired sheet in the next open column.
         Automatically Initializes the TOTAL, MEAN, MEDIAN, and 1ST QUARTILE rows with their math functions.
@@ -93,9 +105,11 @@ class Subsheet:
 
     def give_points_can_create(self, event: str, users: list) -> GivePointsOutput:
         events = self.get_events()
-        if event in events:
+        for i in range(len(events)):
+            events[i] = events[i].lower()
+        if event.lower() in events:
             # Ensure the correct column is selected.
-            return self.give_points(base26.str_from_b26(base26.tob26(self.EVENTSSTART) + events.index(event)), users)
+            return self.give_points(base26.str_from_b26(base26.tob26(self.EVENTSSTART) + events.index(event.lower())), users)
         else:
             out = self.give_points(self.create_new_event(event), users)
             out.createdEvent = True
@@ -103,7 +117,6 @@ class Subsheet:
 
     """
         Gives all names in the users list a point under the requested column.
-        TODO: Allow for additive point granting.
     """
 
     def give_points(self, col: str, users: list[str]) -> GivePointsOutput:
@@ -147,13 +160,73 @@ class Subsheet:
         sheets.sheet.values().update(
             spreadsheetId=SHEETID,
             valueInputOption='USER_ENTERED',
-            range=self.named_range() + c1range(col, self.USERDATASTART, self.USERDATASTART + len(names)),
+            range=self.named_range() + c1range(col, self.USERDATASTART, self.USERDATASTART + len(names)-1),
             body={
                 "majorDimension": 'COLUMNS',
                 "values": [upload]
             }
         ).execute()
         return GivePointsOutput(createdevent=False, success=success, failed=failed)
+
+    def has_codename(self, name: str) -> bool:
+        name = name.lower()
+        nms = self.get_codenames()
+        for i in range(len(nms)):
+            nms[i] = nms[i].lower()
+        return name in nms
+
+    def has_name(self, name: str) -> bool:
+        name = name.lower()
+        nms = self.get_names()
+        for i in range(len(nms)):
+            nms[i] = nms[i].lower()
+        return name in nms
+
+    def new_user(self, name: str, codename: str):
+        row = self.next_open_user_row()
+        upload = [name, codename]
+        # Add extra row math.
+        for formula in self.USERSTATSMATH:
+            upload.append(formula.replace("<ROW>", str(row)))
+        sheets.sheet.values().update(
+            spreadsheetId=SHEETID,
+            valueInputOption='USER_ENTERED',
+            range=self.named_range() + r1range(row, self.NAME, base26.str_from_b26(len(upload))),
+            body={
+                "majorDimension": 'ROWS',
+                "values": [upload]
+            }
+        ).execute()
+
+    """
+        Sorts by first name.
+    """
+    def sort(self):
+        sheets.sheet.batchUpdate(
+            spreadsheetId=SHEETID,
+            body={
+                "requests": [
+                    {
+                        "sortRange": {
+                            "range": {
+                                # THIS IS ACTUALLY THE SUBSHEET ID, GOOGLE DIDN'T NAME IT WELL.
+                                "sheetId": self.GID,
+                                "startRowIndex": self.USERDATASTART,
+                                "startColumnIndex": 1
+                            },
+                            "sortSpecs": [
+                                {
+                                    "dataSourceColumnReference": {
+                                        "name": self.NAME
+                                    },
+                                    "sortOrder": "ASCENDING"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ).execute()
 
     def get_points(self, col: str):
         results = sheets.sheet.values().get(
@@ -188,7 +261,17 @@ class Subsheet:
 
     def get_names(self) -> list[str]:
         results = sheets.sheet.values().get(spreadsheetId=SHEETID, majorDimension="COLUMNS", range=self.named_range() + c1range(self.NAME, self.USERDATASTART, -1)).execute()
-        return results["values"][0]
+        if "values" in results:
+            return results["values"][0]
+        else:
+            return []
+
+    def get_codenames(self) -> list[str]:
+        results = sheets.sheet.values().get(spreadsheetId=SHEETID, majorDimension="COLUMNS", range=self.named_range() + c1range(self.CODENAME, self.USERDATASTART, -1)).execute()
+        if "values" in results:
+            return results["values"][0]
+        else:
+            return []
 
     # For formulaic cells, adds all numbers in the range provided together.
     def sum_column(self, col: str) -> str:

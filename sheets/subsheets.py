@@ -16,3 +16,7 @@ def sheets_main(ps, sheets):
 
 def get_sub_sheet(n: str):
     return GSHEETS[n]
+
+
+def get_sheets():
+    return GSHEETS.values()

@@ -38,7 +38,7 @@ def get_sub_sheet(n: str):
 
 
 if __name__ == '__main__':
-    print("Starting...")
+    print("Starting Nauticock Bot...")
     if not os.path.exists('keys/discord.txt') or not os.path.exists('keys/serverids.txt'):
         print('''Please initialize the keys/ directory with discord.txt and serverids.txt.
         Put your Discord API key into discord.txt.
@@ -51,7 +51,8 @@ if __name__ == '__main__':
         try:
             sheets_main()
             load_extensions()
+            print("Running Nauticock Bot...")
             client.run(BOTTOKEN)
         except:
             traceback.print_exc()
-        print("Running Nauticock Bot...")
+        print("Exiting.")
