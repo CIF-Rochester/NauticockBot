@@ -3,24 +3,23 @@ from nextcord.ext import commands
 from nextcord import Interaction
 from nextcord.ext import application_checks
 from nextcord.utils import get
-import os, sys
-import apikeys, utils
+import os
+from utils import Utils
 
 class Admin(commands.Cog):
 
-    serverIdList = apikeys.serverIdList()
+    serverIdList = Utils.SERVER_LIST
     def __init__(self, client):
-        self.json_filename = 'cogs/reaction_roles.json'
+        self.json_filename = os.path.join(Utils.JSON_PATH, "reaction_roles.json")
 
-        if os.path.exists(self.json_filename) == False:
+        if not os.path.exists(self.json_filename):
             f = open(self.json_filename, 'a')
             f.write("{}")
             f.close()
 
         self.client = client
 
-        self.json_filename = 'cogs/reaction_roles.json'
-        self.reactionRolesJson = utils.load_json(self.json_filename)
+        self.reactionRolesJson = Utils.load_json(self.json_filename)
 
         self.ROLE_FOR_ADMIN_PERMS = "Board"
         self.NO_PERMS_MSG = "You do not have permission to use this command!"
@@ -51,8 +50,8 @@ class Admin(commands.Cog):
                 self.reactionRolesJson[msg_id] = {emoji : {}}
 
             self.reactionRolesJson[msg_id][emoji] = {"role" : role_id}
-            utils.save_json(self.json_filename, self.reactionRolesJson)
-            self.reactionRolesJson = utils.load_json(self.json_filename)
+            Utils.save_json(self.json_filename, self.reactionRolesJson)
+            self.reactionRolesJson = Utils.load_json(self.json_filename)
         else:
             await interaction.response.send_message(self.NO_PERMS_MSG)
     
@@ -83,7 +82,6 @@ class Admin(commands.Cog):
             return
         
         role = guild.get_role(role_id)
-
 
         await payload.member.add_roles(role)
     
@@ -122,3 +120,4 @@ class Admin(commands.Cog):
     
 def setup(client):
     client.add_cog(Admin(client))
+    

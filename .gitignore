@@ -1,5 +1,8 @@
-keys/*
+__pycache__/*
 test.py
 cogs/reaction_roles.json
 /.vscode
 /venv
+config.cfg
+*.pyc
+*.py[cod]

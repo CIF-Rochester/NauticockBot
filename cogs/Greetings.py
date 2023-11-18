@@ -2,12 +2,11 @@ import nextcord
 from nextcord.ext import commands
 from nextcord import Interaction
 from nextcord.ext import application_checks
-import os, sys
-import apikeys
+from utils import Utils
 
 class Greetings(commands.Cog):
 
-    serverIdList = apikeys.serverIdList()
+    serverIdList = Utils.SERVER_LIST
             
     def __init__(self, client):
         self.client = client
@@ -20,7 +19,7 @@ class Greetings(commands.Cog):
 
         roles = before.guild.roles
         role_index = -1
-        for i in range(0, len(roles)): #roles is not iterable :/
+        for i in range(0, len(roles)): # roles is not iterable :/
             role = str(roles[i])
             if role == 'Friends':
                 role_index = i
