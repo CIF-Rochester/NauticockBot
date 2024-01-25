@@ -3,3 +3,8 @@ test.py
 cogs/reaction_roles.json
 /.vscode
 /venv
+config.cfg
+.venv/*
+__pycahce__/*
+cogs/__pycahce__/*
+data/*.json

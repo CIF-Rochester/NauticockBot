@@ -3,21 +3,39 @@ from nextcord.ext import commands
 from nextcord import Interaction
 from nextcord.ext import application_checks
 import os, sys
-import apikeys
+import argparse
+from config import load_config, Config
+import globals
 
-if os.path.exists('keys/discord.txt') == False or os.path.exists('keys/serverids.txt') == False:
-    print('''Please initialize the keys/ directory with discord.txt and serverids.txt.
-    Put your Discord API key into discord.txt.
-    Put the ID of the servers you want to allow the bot to message in.
-    Therefore, you should have these files:
-        keys/discord.txt
-        keys/serverids.txt''')
-    sys.exit(1)
-else:
-    print("Running Nauticock Bot...")
+from config import Config
 
-serverIdList = apikeys.serverIdList()
-BOTTOKEN = apikeys.discordApiKey()
+def print_cfg(config: Config):
+    """
+    Prints the configuration in a readable format.
+    """
+    print("Config:")
+    print(f"  API Key: {config.api.key}")
+    print(f"  Gatekeeper:")
+    print(f"    Username: {config.gatekeeper.username}")
+    print(f"    IP: {config.gatekeeper.ip}")
+    print(f"  Servers:")
+    server_list_str = ', '.join(str(id) for id in config.servers.server_list)
+    print(f"    Server List: {server_list_str}")
+
+SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
+DEFAULT_CFG_PATH = os.path.join(SCRIPT_PATH, "config.cfg")
+
+parser = argparse.ArgumentParser(description="CIF Discord Bot.")
+parser.add_argument('--config', '-c', help='Path to Nauticock config file.', default=DEFAULT_CFG_PATH)
+
+args = parser.parse_args()
+path_to_cfg = args.config
+config: Config = load_config(path_to_cfg)
+globals.config = config
+print_cfg(config)
+
+serverIdList = config.servers.server_list
+BOTTOKEN = config.api.key
 
 intents = nextcord.Intents.all() # VITAL that this is .all()
 
