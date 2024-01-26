@@ -2,19 +2,17 @@
 
 ![The Nauticock](https://cdn.discordapp.com/attachments/798075108853809163/1068405103914135623/TheNauticock_-_Copy.png)
 
-Updated for 2023 with new slash commands, using [nextcord](https://github.com/nextcord/nextcord) for the API.
+Updated for 2024 with new slash commands, using [nextcord](https://github.com/nextcord/nextcord) for the API.
 
 ## Prerequisites:
-* [Python 3.10+](https://www.python.org/)
+* [Python >= 3.10.12](https://www.python.org/)
 * [nextcord](https://pypi.org/project/nextcord/)
 
-## Initialization
-
-* You can install the required packages by running `python3 -m pip install -r requirements.txt`
-* Then, create a directory named `keys`.
-* Create `discord.txt` and `serverids.txt` inside the `keys` directory.
-* Put your discord bot API key into `discord.txt`
-* Put the Ids of the servers you would like to allow the bot to be used on in `serverids.txt` on each line.
+## Quick Start
+- **(Recommended)** Create a virtual environment with `python3 -m venv .venv` and activate it with `source .venv/bin/activate`
+- run `python3 -m pip install -r requirements.txt`
+- copy `config.example.cfg` to `config.cfg` and adjust the configuration
+- run `python3 main.py`
 
 ## Features Implemented
 
@@ -24,10 +22,23 @@ Updated for 2023 with new slash commands, using [nextcord](https://github.com/ne
 
 ## Code Structure
 
-* `main.py` is the main "executable". It creates a cogs list to use the modules in `cogs/`.
+* `main.py` creates a cogs list to use the modules in `cogs/`.
 * `utils.py` is for json loading and saving utils.
 * `apikeys.py` is for loading api keys and server Ids.
 * cog modules explained below.
+
+## Command Line Arguments
+
+```
+usage: main.py [-h] [--config CONFIG]
+
+CIF Discord Bot.
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG, -c CONFIG
+                        Path to Nauticock config file.
+```
 
 ## Admin.py
 

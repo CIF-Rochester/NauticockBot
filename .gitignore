@@ -8,3 +8,4 @@ config.cfg
 __pycahce__/*
 cogs/__pycahce__/*
 data/*.json
+*.pyc
