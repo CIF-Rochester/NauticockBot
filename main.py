@@ -14,7 +14,6 @@ def print_cfg(config: Config):
     Prints the configuration in a readable format.
     """
     print("Config:")
-    print(f"  API Key: {config.api.key}")
     print(f"  Gatekeeper:")
     print(f"    Username: {config.gatekeeper.username}")
     print(f"    IP: {config.gatekeeper.ip}")
