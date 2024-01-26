@@ -2,7 +2,7 @@ import nextcord
 from nextcord.ext import commands
 from nextcord import Interaction
 from nextcord.ext import application_checks
-import os, sys, globals
+import globals
 
 STARTER_ROLE = 'Friends'
 

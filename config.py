@@ -13,6 +13,7 @@ class Gatekeeper:
     username: str
     password: str
     ip: str
+    command: str
 
     def __repr__(self):
         # Custom repr to prevent accidentally printing the password
@@ -46,7 +47,8 @@ def load_config(config_path: os.PathLike) -> Config:
         gatekeeper = Gatekeeper(
             username=cfg.get('gatekeeper', 'username'),
             password=cfg.get('gatekeeper', 'password'),
-            ip=cfg.get('gatekeeper', 'ip')
+            ip=cfg.get('gatekeeper', 'ip'),
+            command=cfg.get('gatekeeper', 'command')
         )
 
         # Convert server_list to a set of integers

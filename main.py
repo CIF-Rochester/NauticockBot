@@ -2,7 +2,7 @@ import nextcord
 from nextcord.ext import commands
 from nextcord import Interaction
 from nextcord.ext import application_checks
-import os, sys
+import os
 import argparse
 from config import load_config, Config
 import globals

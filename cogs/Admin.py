@@ -3,14 +3,15 @@ from nextcord.ext import commands
 from nextcord import Interaction
 from nextcord.ext import application_checks
 from nextcord.utils import get
-import os, sys
+from datetime import datetime, timedelta
+import os
 import utils, globals
 
 class Admin(commands.Cog):
 
     serverIdList = globals.config.servers.server_list
     def __init__(self, client):
-        self.json_filename = 'cogs/reaction_roles.json'
+        self.json_filename = 'data/reaction_roles.json'
 
         if os.path.exists(self.json_filename) == False:
             f = open(self.json_filename, 'a')
@@ -19,7 +20,6 @@ class Admin(commands.Cog):
 
         self.client = client
 
-        self.json_filename = 'cogs/reaction_roles.json'
         self.reactionRolesJson = utils.load_json(self.json_filename)
 
         self.ROLE_FOR_ADMIN_PERMS = "Board"
@@ -119,6 +119,30 @@ class Admin(commands.Cog):
             return
 
         await member.remove_roles(role)
-    
+
+    @nextcord.slash_command(name="gatekeeper-log", description="Get gatekeeper logs for the current day.", guild_ids=serverIdList)
+    async def gatekeeper_log(self, interaction: Interaction, yesterday: bool = False, day: str = None):
+        role = get(interaction.user.roles, name=self.ROLE_FOR_ADMIN_PERMS)
+        if role in interaction.user.roles:
+            await interaction.response.defer()
+            if day:
+                try:
+                    date = datetime.strptime(day, "%Y-%m-%d")
+                except ValueError:
+                    await interaction.followup.send("Invalid date format. Please use YYYY-MM-DD.")
+                    return
+            elif yesterday:
+                date = datetime.now() - timedelta(days=1)
+            else:
+                date = datetime.now()
+
+            timestamp = date.strftime("%Y-%m-%d")
+
+            output = utils.ssh(timestamp)
+
+            await interaction.followup.send(output)
+        else:
+            await interaction.response.send_message(self.NO_PERMS_MSG)
+
 def setup(client):
     client.add_cog(Admin(client))

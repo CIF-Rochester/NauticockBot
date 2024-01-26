@@ -1,1 +1,2 @@
-config = None
+from config import Config
+config: Config = None
