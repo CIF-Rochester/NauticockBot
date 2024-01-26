@@ -14,19 +14,6 @@ Updated for 2024 with new slash commands, using [nextcord](https://github.com/ne
 - copy `config.example.cfg` to `config.cfg` and adjust the configuration
 - run `python3 main.py`
 
-## Features Implemented
-
-* New members will automatically be given the "Friends" role.
-* Role reaction monitor abilities.
-* Simple commands for public use such as /wiki and /website.
-
-## Code Structure
-
-* `main.py` creates a cogs list to use the modules in `cogs/`.
-* `utils.py` is for json loading and saving utils.
-* `apikeys.py` is for loading api keys and server Ids.
-* cog modules explained below.
-
 ## Command Line Arguments
 
 ```
@@ -39,6 +26,19 @@ options:
   --config CONFIG, -c CONFIG
                         Path to Nauticock config file.
 ```
+
+## Features Implemented
+
+* New members will automatically be given the "Friends" role.
+* Role reaction monitor abilities.
+* Simple commands for public use such as /wiki and /website.
+
+## Code Structure
+
+* `main.py` creates a cogs list to use the modules in `cogs/`.
+* `utils.py` is for json loading and saving utils.
+* `apikeys.py` is for loading api keys and server Ids.
+* cog modules explained below.
 
 ## Admin.py
 
