@@ -1,6 +1,6 @@
 # The Nauticock Discord Bot
 
-![The Nauticock](https://cdn.discordapp.com/attachments/798075108853809163/1068405103914135623/TheNauticock_-_Copy.png)
+![The Nauticock](https://github.com/CIF-Rochester/NauticockBot/blob/master/TheNauticock.png?raw=true)
 
 Updated for 2024 with new slash commands, using [nextcord](https://github.com/nextcord/nextcord) for the API.
 
