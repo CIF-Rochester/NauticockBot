@@ -54,3 +54,7 @@ options:
 ## General.py
 
 * For general public use functions such as retrieval of commonly used links.
+
+## Future Plans
+- attendance integration with the attendance google sheet
+- lab account signup through discord
