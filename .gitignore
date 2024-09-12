@@ -9,3 +9,4 @@ __pycahce__/*
 cogs/__pycahce__/*
 data/*.json
 *.pyc
+bot.log

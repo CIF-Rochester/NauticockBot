@@ -2,7 +2,10 @@ from typing import Union, Set
 import os
 import configparser
 import sys
+import logging
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class API:
@@ -29,21 +32,22 @@ class Config:
     gatekeeper: Gatekeeper
     servers: Servers
 
+
 def load_config(config_path: os.PathLike) -> Config:
     '''
     Load and validate the config file. Exits the program if the config is invalid.
     '''
-
+    logger.info(f"Loading config from {config_path}")
     try:
         cfg = configparser.ConfigParser()
         cfg.read(config_path)
     except Exception as e:
-        print(f"Failed to load config file from {config_path}: {e}", file=sys.stderr)
+        logger.error(
+            f"Failed to load config file from {config_path}", exc_info=e)
         exit(1)
 
     try:
         api = API(key=cfg.get('api', 'key'))
-
         gatekeeper = Gatekeeper(
             username=cfg.get('gatekeeper', 'username'),
             password=cfg.get('gatekeeper', 'password'),
@@ -53,23 +57,14 @@ def load_config(config_path: os.PathLike) -> Config:
 
         # Convert server_list to a set of integers
         server_list_str = cfg.get('servers', 'server_list').split(',')
-        server_list_int = set()
-        for server_id_str in server_list_str:
-            try:
-                server_id_int = int(server_id_str.strip())
-                server_list_int.add(server_id_int)
-            except ValueError:
-                raise ValueError(f"Invalid server ID: {server_id_str}")
-
+        server_list_int = {int(server_id.strip())
+                           for server_id in server_list_str}
         servers = Servers(server_list=server_list_int)
 
-        config = Config(
-            api=api,
-            gatekeeper=gatekeeper,
-            servers=servers,
-        )
+        config = Config(api=api, gatekeeper=gatekeeper, servers=servers)
+        logger.info("Config successfully loaded and parsed")
     except Exception as e:
-        print(f"Error in config file {config_path}: {e}", file=sys.stderr)
+        logger.error(f"Error in config file {config_path}", exc_info=e)
         exit(1)
 
     return config
