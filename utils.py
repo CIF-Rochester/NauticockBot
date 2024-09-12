@@ -12,7 +12,7 @@ def save_json(file: str, data: dict):
     Saves data to a JSON file, overwriting existing content.
     """
     try:
-        with open(file, 'w') as f:
+        with open(file, "w") as f:
             json.dump(data, f)
         logger.info(f"Successfully saved JSON to {file}")
     except Exception as e:
@@ -24,7 +24,7 @@ def load_json(jsonfilename: str):
     Loads data from a JSON file.
     """
     try:
-        with open(jsonfilename, 'r') as file:
+        with open(jsonfilename, "r") as file:
             logger.info(f"Successfully loaded JSON from {jsonfilename}")
             return json.load(file)
     except Exception as e:
@@ -35,19 +35,19 @@ def ssh(timestamp: str) -> str:
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        logger.info(
-            f"Attempting SSH connection to {globals.config.gatekeeper.ip}")
-        client.connect(globals.config.gatekeeper.ip,
-                       username=globals.config.gatekeeper.username,
-                       password=globals.config.gatekeeper.password)
+        logger.info(f"Attempting SSH connection to {globals.config.gatekeeper.ip}")
+        client.connect(
+            globals.config.gatekeeper.ip,
+            username=globals.config.gatekeeper.username,
+            password=globals.config.gatekeeper.password,
+        )
 
         command = globals.config.gatekeeper.command + f" --day {timestamp}"
-        logger.info(
-            f"Executing command on {globals.config.gatekeeper.ip}: {command}")
+        logger.info(f"Executing command on {globals.config.gatekeeper.ip}: {command}")
         stdin, stdout, stderr = client.exec_command(command)
 
-        output = stdout.read().decode('utf-8')
-        error = stderr.read().decode('utf-8')
+        output = stdout.read().decode("utf-8")
+        error = stderr.read().decode("utf-8")
 
         if output:
             logger.info(f"Command output: \n{output}")
