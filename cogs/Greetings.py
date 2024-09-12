@@ -18,45 +18,24 @@ class Greetings(commands.Cog):
         logger.info("Greetings cog initialized.")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        logger.debug(
-            f"on_member_update triggered for member: {before.name}#{before.discriminator}")
+    async def on_member_join(self, member: nextcord.Member):
+        logger.info(f"New member joined: {member.name}#{member.discriminator}")
 
-        if before.bot or after.bot:
-            logger.debug(
-                f"Skipping bot member: {before.name}#{before.discriminator}")
-            return
+        # Find the STARTER_ROLE in the guild roles
+        starter_role = nextcord.utils.get(
+            member.guild.roles, name=STARTER_ROLE)
 
-        roles = before.guild.roles
-        role_index = -1
-
-        for i, role in enumerate(roles):
-            if role.name == STARTER_ROLE:
-                role_index = i
-                logger.debug(
-                    f"Starter role '{STARTER_ROLE}' found at index {i}.")
-                break
-
-        if role_index == -1:
-            logger.warning(
-                f"Starter role '{STARTER_ROLE}' not found in the guild roles.")
-            return
-
-        member = self.client.get_guild(before.guild.id).get_member(before.id)
-
-        if before.pending and not after.pending:
-            logger.info(
-                f"Member '{before.name}#{before.discriminator}' is no longer pending. Adding role '{STARTER_ROLE}'.")
+        if starter_role:
             try:
-                await member.add_roles(roles[role_index])
+                await member.add_roles(starter_role)
                 logger.info(
-                    f"Successfully added role '{STARTER_ROLE}' to member '{before.name}#{before.discriminator}'.")
+                    f"Assigned '{STARTER_ROLE}' role to {member.name}#{member.discriminator}")
             except Exception as e:
                 logger.error(
-                    f"Failed to add role '{STARTER_ROLE}' to member '{before.name}#{before.discriminator}'", exc_info=e)
+                    f"Failed to assign role '{STARTER_ROLE}' to {member.name}#{member.discriminator}", exc_info=e)
         else:
-            logger.debug(
-                f"No role change needed for member '{before.name}#{before.discriminator}'.")
+            logger.warning(
+                f"Role '{STARTER_ROLE}' not found in guild {member.guild.name} (ID: {member.guild.id})")
 
 
 def setup(client):
