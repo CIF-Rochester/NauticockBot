@@ -2,17 +2,27 @@
 
 ![The Nauticock](https://github.com/CIF-Rochester/NauticockBot/blob/master/TheNauticock.png?raw=true)
 
-Updated for 2024 with new slash commands, using [nextcord](https://github.com/nextcord/nextcord) for the API.
+Updated for 2024 with new slash commands, now using [nextcord](https://github.com/nextcord/nextcord).
 
-## Prerequisites:
-* [Python >= 3.10.12](https://www.python.org/)
-* [nextcord](https://pypi.org/project/nextcord/)
+## Prerequisites
+- [Python >= 3.10.12](https://www.python.org/)
+- [nextcord](https://pypi.org/project/nextcord/)
 
 ## Quick Start
-- **(Recommended)** Create a virtual environment with `python3 -m venv .venv` and activate it with `source .venv/bin/activate`
-- run `python3 -m pip install -r requirements.txt`
-- copy `config.example.cfg` to `config.cfg` and adjust the configuration
-- run `python3 main.py`
+1. **(Recommended)** Create a virtual environment:
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate
+    ```
+2. Install dependencies:
+    ```bash
+    python3 -m pip install -r requirements.txt
+    ```
+3. Copy `config.example.cfg` to `config.cfg` and adjust it to fit your server and bot settings.
+4. Run the bot:
+    ```bash
+    python3 main.py
+    ```
 
 ## Command Line Arguments
 
@@ -27,34 +37,26 @@ options:
                         Path to Nauticock config file.
 ```
 
-## Features Implemented
+## Features
 
-* New members will automatically be given the "Friends" role.
-* Role reaction monitor abilities.
-* Simple commands for public use such as /wiki and /website.
+- Automatically assigns the "Friends" role to new members.
+- Role reaction monitor functionality.
+- Public commands such as `/wiki`, `/website`, and more.
+- Admin commands restricted to users with the "Board" role.
 
 ## Code Structure
 
-* `main.py` creates a cogs list to use the modules in `cogs/`.
-* `utils.py` is for json loading and saving utils.
-* `apikeys.py` is for loading api keys and server Ids.
-* cog modules explained below.
+- **`main.py`**: Initializes the bot and loads cogs (modules) from the `cogs/` folder.
+- **`utils.py`**: Handles utility functions, like JSON loading and saving.
+- **`globals.py`**: Stores global configuration loaded from the config file.
+- **`config.py`**: Handles configuration file parsing and validation.
 
-## Admin.py
+### Cogs
 
-* For admin commands, such as `/botsay`.
-* Full role monitoring and adding role monitors.
-* Only users with the "Board" role can use these commands.
-
-## Greetings.py
-
-* For `on_member_update()` functionality.
-* Gives the "Friends" role to new members who pass the rules screening.
-
-## General.py
-
-* For general public use functions such as retrieval of commonly used links.
+- **`Admin.py`**: Handles admin-specific commands (e.g., `/botsay`, role management).
+- **`Greetings.py`**: Automatically assigns the "Friends" role to new members.
+- **`General.py`**: Public commands for retrieving important links (e.g., `/wiki`, `/website`).
 
 ## Future Plans
-- attendance integration with the attendance google sheet
-- lab account signup through discord
+- Integration with the attendance Google sheet for better tracking.
+- Lab account signups directly through Discord.
