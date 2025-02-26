@@ -31,7 +31,7 @@ def load_json(jsonfilename: str):
         logger.error(f"Failed to load JSON from {jsonfilename}", exc_info=e)
 
 
-def ssh(timestamp: str) -> str:
+def ssh_gatekeeper(timestamp: str) -> str:
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -44,6 +44,37 @@ def ssh(timestamp: str) -> str:
 
         command = globals.config.gatekeeper.command + f" --day {timestamp}"
         logger.info(f"Executing command on {globals.config.gatekeeper.ip}: {command}")
+        stdin, stdout, stderr = client.exec_command(command)
+
+        output = stdout.read().decode("utf-8")
+        error = stderr.read().decode("utf-8")
+
+        if output:
+            logger.info(f"Command output: \n{output}")
+            return f"```\n{output}\n```"
+        if error:
+            logger.error(f"Command error: \n{error}")
+            return "Error: " + error
+        return f"No data for day: {timestamp}"
+    except Exception as e:
+        logger.error("SSH connection or command execution failed", exc_info=e)
+        return "Connection or execution failed."
+    finally:
+        client.close()
+
+def ssh_print_server(timestamp: str, all: bool) -> bool:
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        logger.info(f"Attempting SSH connection to {globals.config.print_server.ip}")
+        client.connect(
+            globals.config.print_server.ip,
+            username=globals.config.print_server.username,
+            password=globals.config.print_server.password,
+        )
+
+        command = globals.config.print_server.command + f" --day {timestamp}"  + f" --all {all}"
+        logger.info(f"Executing command on {globals.config.print_server.ip}: {command}")
         stdin, stdout, stderr = client.exec_command(command)
 
         output = stdout.read().decode("utf-8")

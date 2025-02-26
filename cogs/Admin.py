@@ -218,13 +218,59 @@ class Admin(commands.Cog):
                 date = datetime.now()
 
             timestamp = date.strftime("%Y-%m-%d")
-            output = utils.ssh(timestamp)
+            output = utils.ssh_gatekeeper(timestamp)
             await interaction.followup.send(output)
             logger.info(f"Gatekeeper log sent for {timestamp}")
         else:
             await interaction.response.send_message(self.NO_PERMS_MSG)
             logger.warning(
                 f"Unauthorized /gatekeeper-log command attempt by {interaction.user.name}"
+            )
+
+    @nextcord.slash_command(
+        name="print-log",
+        description="Get print server's logs for the current day.",
+        guild_ids=serverIdList,
+    )
+    async def print_log(
+        self,
+        interaction: nextcord.Interaction,
+        yesterday: bool = False,
+        day: str = None,
+        all: bool = False
+    ):
+        logger.info(
+            f"Received /print-log command from {interaction.user.name}: yesterday={yesterday}, day={day}, all={all}"
+        )
+        role = get(interaction.user.roles, name=self.ROLE_FOR_ADMIN_PERMS)
+
+        if role:
+            await interaction.response.defer()
+
+            if day:
+                try:
+                    date = datetime.strptime(day, "%Y-%m-%d")
+                except ValueError:
+                    await interaction.followup.send(
+                        "Invalid date format. Please use YYYY-MM-DD."
+                    )
+                    logger.warning(
+                        f"Invalid date format for /print-log command: {day}"
+                    )
+                    return
+            elif yesterday:
+                date = datetime.now() - timedelta(days=1)
+            else:
+                date = datetime.now()
+
+            timestamp = date.strftime("%Y-%m-%d")
+            output = utils.ssh_print_server(timestamp, all)
+            await interaction.followup.send(output)
+            logger.info(f"Print Server log sent for {timestamp}")
+        else:
+            await interaction.response.send_message(self.NO_PERMS_MSG)
+            logger.warning(
+                f"Unauthorized /print-log command attempt by {interaction.user.name}"
             )
 
 
