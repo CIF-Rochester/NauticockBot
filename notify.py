@@ -19,10 +19,10 @@ async def notify():
     try:
         client = get_client()
         await client.login(config.api.key)
-        logger.info(f"Recieved message \"{args.text}\" from print server")
+        logger.info(f"Recieved message \"{args.text}\" from user {args.user} on the print server")
         channel = await client.fetch_channel(int(config.api.channel))
         if channel:
-            await channel.send(args.text)
+            await channel.send(f"WARNING - User {args.user} attempted the following print:```\n{args.text}\n```")
             logger.info(f"Sent print notification to channel {config.api.channel}")
         else:
             logger.warning(f"Channel ID {int(config.api.channel)} not found for print notification")
@@ -45,6 +45,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="CIF Discord Bot.")
     parser.add_argument("--config", "-c", help="Path to Nauticock config file.", default=DEFAULT_CFG_PATH)
+    parser.add_argument("--user","-u", help="User initiating notification.")
     parser.add_argument("--text", "-t", help="Message to be sent")
 
     args = parser.parse_args()
