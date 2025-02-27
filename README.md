@@ -2,7 +2,7 @@
 
 ![The Nauticock](https://github.com/CIF-Rochester/NauticockBot/blob/master/TheNauticock.png?raw=true)
 
-Updated for 2024 with new slash commands, now using [nextcord](https://github.com/nextcord/nextcord).
+Updated for 2025 with new slash commands, now using [nextcord](https://github.com/nextcord/nextcord).
 
 ## Prerequisites
 - [Python >= 3.10.12](https://www.python.org/)
@@ -43,6 +43,7 @@ options:
 - Role reaction monitor functionality.
 - Public commands such as `/wiki`, `/website`, and more.
 - Admin commands restricted to users with the "Board" role.
+- Log integration with both GateKeeper and the print server
 
 ## Code Structure
 
@@ -50,6 +51,7 @@ options:
 - **`utils.py`**: Handles utility functions, like JSON loading and saving.
 - **`globals.py`**: Stores global configuration loaded from the config file.
 - **`config.py`**: Handles configuration file parsing and validation.
+- **`notify.py`**: Secondary script that sends a specified message to the debug-console channel
 
 ### Cogs
 
