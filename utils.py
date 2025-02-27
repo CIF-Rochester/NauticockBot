@@ -72,8 +72,10 @@ def ssh_print_server(timestamp: str, all: bool) -> bool:
             username=globals.config.print_server.username,
             password=globals.config.print_server.password,
         )
-
-        command = globals.config.print_server.command + f" --day {timestamp}"  + f" --all {all}"
+        if all:
+            command = globals.config.print_server.command + f" --day {timestamp}"  + f" --all"
+        else:
+            command = globals.config.print_server.command + f" --day {timestamp}"
         logger.info(f"Executing command on {globals.config.print_server.ip}: {command}")
         stdin, stdout, stderr = client.exec_command(command)
 
