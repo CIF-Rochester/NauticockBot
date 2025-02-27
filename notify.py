@@ -7,23 +7,28 @@ from nextcord.ext import commands
 import asyncio
 import logging
 
+def get_client() -> commands.Bot:
+    try:
+        intents = Intents.all()
+        return commands.Bot(intents=intents)
+    except Exception as e:
+        logger.error(f"Unable to get client: {e}")
+
 
 async def notify():
     try:
-        logger.info(f"Recieved message {args.text} from print server")
-        intents = Intents.all()
-        client = commands.Bot(intents=intents)
-
-        async with client:
-            channel = client.get_channel(int(config.api.channel))
-            if channel:
-                await channel.send(args.text)
-                logger.info(f"Sent print notification to channel {config.api.channel}")
-            else:
-                logger.warning(f"Channel ID {config.api.channel} not found for print notification.")
-            await client.close()
+        client = get_client()
+        await client.login(config.api.key)
+        logger.info(f"Recieved message \"{args.text}\" from print server")
+        channel = await client.fetch_channel(int(config.api.channel))
+        if channel:
+            await channel.send(args.text)
+            logger.info(f"Sent print notification to channel {config.api.channel}")
+        else:
+            logger.warning(f"Channel ID {int(config.api.channel)} not found for print notification")
+        await client.close()
     except Exception as e:
-        logger.error("Error sending print notification")
+        logger.error(f"Error sending print notification: {e}")
 
 if __name__ == "__main__":
     log_file = "bot.log"
