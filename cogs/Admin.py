@@ -15,7 +15,7 @@ class Admin(commands.Cog):
 
     serverIdList = globals.config.servers.server_list
 
-    def __init__(self, client):
+    def __init__(self, client: commands.Bot):
         self.client = client
         self.json_filename = "data/reaction_roles.json"
 
@@ -228,11 +228,11 @@ class Admin(commands.Cog):
             )
 
     @nextcord.slash_command(
-        name="print-log",
-        description="Get print server's logs for the current day.",
-        guild_ids=serverIdList,
+        name="printer-log",
+        description="Get print server's logs for the current day."
+        # guild_ids=serverIdList,
     )
-    async def print_log(
+    async def printer_log(
         self,
         interaction: nextcord.Interaction,
         yesterday: bool = False,
@@ -240,13 +240,12 @@ class Admin(commands.Cog):
         all: bool = False
     ):
         logger.info(
-            f"Received /print-log command from {interaction.user.name}: yesterday={yesterday}, day={day}, all={all}"
+            f"Received /printer-log command from {interaction.user.name}: yesterday={yesterday}, day={day}, all={all}"
         )
         role = get(interaction.user.roles, name=self.ROLE_FOR_ADMIN_PERMS)
 
         if role:
             await interaction.response.defer()
-
             if day:
                 try:
                     date = datetime.strptime(day, "%Y-%m-%d")
@@ -255,7 +254,7 @@ class Admin(commands.Cog):
                         "Invalid date format. Please use YYYY-MM-DD."
                     )
                     logger.warning(
-                        f"Invalid date format for /print-log command: {day}"
+                        f"Invalid date format for /printer-log command: {day}"
                     )
                     return
             elif yesterday:
@@ -270,7 +269,7 @@ class Admin(commands.Cog):
         else:
             await interaction.response.send_message(self.NO_PERMS_MSG)
             logger.warning(
-                f"Unauthorized /print-log command attempt by {interaction.user.name}"
+                f"Unauthorized /printer-log command attempt by {interaction.user.name}"
             )
 
 
