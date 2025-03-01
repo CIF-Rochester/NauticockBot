@@ -229,8 +229,8 @@ class Admin(commands.Cog):
 
     @nextcord.slash_command(
         name="printer-log",
-        description="Get print server's logs for the current day."
-        # guild_ids=serverIdList,
+        description="Get print server's logs for the current day.",
+        guild_ids=serverIdList,
     )
     async def printer_log(
         self,
