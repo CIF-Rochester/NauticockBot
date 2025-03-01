@@ -51,7 +51,6 @@ options:
 - **`utils.py`**: Handles utility functions, like JSON loading and saving.
 - **`globals.py`**: Stores global configuration loaded from the config file.
 - **`config.py`**: Handles configuration file parsing and validation.
-- **`notify.py`**: Secondary script that sends a specified message to the debug-console channel
 
 ### Cogs
 
