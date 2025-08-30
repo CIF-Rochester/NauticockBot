@@ -280,6 +280,7 @@ class Admin(commands.Cog):
                 f"Unauthorized /printer-log command attempt by {interaction.user.name}"
             )
 
+
     @commands.Cog.listener()
     async def on_message(self, message: Message):
         if "cifai" in message.content.lower():
@@ -430,7 +431,6 @@ class Admin(commands.Cog):
             logger.warning(
                 f"Unauthorized /update-members command attempt by {interaction.user.name}"
             )
-
 
 def setup(client):
     logger.info("Setting up Admin cog.")

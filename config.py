@@ -118,6 +118,7 @@ def load_config(config_path: os.PathLike) -> Config:
         servers = Servers(server_list=server_list_int)
 
         config = Config(api=api, gatekeeper=gatekeeper, print_server=print_server, vicuna=vicuna, citadel=citadel, servers=servers)
+        config = Config(api=api, gatekeeper=gatekeeper, print_server=print_server, servers=servers)
         logger.info("Config successfully loaded and parsed")
     except Exception as e:
         logger.error(f"Error in config file {config_path}", exc_info=e)
