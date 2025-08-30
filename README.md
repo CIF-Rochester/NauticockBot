@@ -60,4 +60,3 @@ options:
 
 ## Future Plans
 - Integration with the attendance Google sheet for better tracking.
-- Lab account signups directly through Discord.

@@ -38,6 +38,27 @@ class PrintServer:
         return f"PrintServer(username={repr(self.username)}, password=*****, ip={repr(self.ip)})"
 
 @dataclass
+class Vicuna:
+    username: str
+    password: str
+    ip: str
+    command: str
+
+    def __repr__(self):
+        # Custom repr to prevent accidentally printing the password
+        return f"Vicuna(username={repr(self.username)}, password=*****, ip={repr(self.ip)})"
+
+@dataclass
+class Citadel:
+    username: str
+    password: str
+    ip: str
+    verify_ssl: bool
+
+    def __repr__(self):
+        return f"Citadel(username={repr(self.username)}, password=*****, ip={repr(self.ip)})"
+
+@dataclass
 class Servers:
     server_list: Set[int]
 
@@ -47,6 +68,8 @@ class Config:
     api: API
     gatekeeper: Gatekeeper
     print_server: PrintServer
+    vicuna: Vicuna
+    citadel: Citadel
     servers: Servers
 
 
@@ -76,12 +99,25 @@ def load_config(config_path: os.PathLike) -> Config:
             ip=cfg.get("printserver", "ip"),
             command=cfg.get("printserver", "command"),
         )
+        vicuna = Vicuna(
+            username=cfg.get("vicuna", "username"),
+            password=cfg.get("vicuna", "password"),
+            ip=cfg.get("vicuna", "ip"),
+            command=cfg.get("vicuna", "command"),
+        )
+        citadel = Citadel(
+            username=cfg.get("citadel","username"),
+            password=cfg.get("citadel","password"),
+            ip=cfg.get("citadel","ip"),
+            verify_ssl=cfg.getboolean("citadel","verify_ssl")
+        )
 
         # Convert server_list to a set of integers
         server_list_str = cfg.get("servers", "server_list").split(",")
         server_list_int = {int(server_id.strip()) for server_id in server_list_str}
         servers = Servers(server_list=server_list_int)
 
+        config = Config(api=api, gatekeeper=gatekeeper, print_server=print_server, vicuna=vicuna, citadel=citadel, servers=servers)
         config = Config(api=api, gatekeeper=gatekeeper, print_server=print_server, servers=servers)
         logger.info("Config successfully loaded and parsed")
     except Exception as e:
