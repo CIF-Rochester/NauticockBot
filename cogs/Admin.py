@@ -1,9 +1,17 @@
+import asyncio
 import logging
+from enum import member
+
 import nextcord
+from discord.types.emoji import Emoji
+from nextcord import Message
 from nextcord.ext import commands
 from nextcord.utils import get
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import os
+
+from python_freeipa import ClientMeta
+
 import utils
 import globals
 
@@ -270,6 +278,157 @@ class Admin(commands.Cog):
             await interaction.response.send_message(self.NO_PERMS_MSG)
             logger.warning(
                 f"Unauthorized /printer-log command attempt by {interaction.user.name}"
+            )
+
+    @commands.Cog.listener()
+    async def on_message(self, message: Message):
+        if "cifai" in message.content.lower():
+            logger.info(f"Reacted to {message.author.name}'s message with :cif")
+            await message.add_reaction("<:cif:819374166082846730>")
+        if "/ask" in message.content:
+            prompt = message.content[(message.content.index("/ask") + 4):]
+            logger.info(
+                f"Received /ask command from {message.author.name}: prompt={prompt}"
+            )
+            role = get(message.author.roles, name=self.ROLE_FOR_ADMIN_PERMS)
+
+            if role:
+                prompt = prompt.replace('\\', '\\\\').replace('\n', '\\n').replace('\"', '\\"').replace('\'', '\\\'')
+                reply_message = await message.reply("Thinking . . . ")
+                asyncio.create_task(utils.ssh_vicuna(message.author, prompt, message.author.guild.get_channel(message.channel.id), reply_message))
+            else:
+                logger.warning(
+                    f"Unauthorized /ask command attempt by {message.author.name}"
+                )
+        await self.client.process_commands(message)
+
+    @nextcord.slash_command(name="lab-access",description="Gather information from user and create lab account",guild_ids=serverIdList)
+    async def lab_access(self, interaction: nextcord.Interaction, account_name: str, member: bool = False):
+        logger.info(
+            f"Received /lab-access command from {interaction.user.name}: account_name={account_name}"
+        )
+        role = get(interaction.user.roles, name=self.ROLE_FOR_ADMIN_PERMS)
+
+        if role:
+            await interaction.response.defer()
+            guild = interaction.guild
+            subject = guild.get_member_named(account_name)
+            output_channel = guild.get_channel(interaction.channel_id)
+            if output_channel is None:
+                await interaction.followup.send("Could not get output channel")
+                logger.warning("Could not get output channel")
+            if not subject is None:
+                dm_channel = subject.dm_channel
+                if dm_channel is None:
+                    dm_channel = await subject.create_dm()
+                    logger.info(f"Created DM Channel for {account_name}")
+                asyncio.create_task(utils.dm_subject(self.client, dm_channel, subject, output_channel, member=member))
+                await interaction.followup.send(f"DM sent to {account_name}")
+                logger.info(f"DM sent to {account_name}")
+            else:
+                await interaction.followup.send(f"No user with account name {account_name} exists in guild {guild}")
+                logger.warning(f"No user with account name {account_name} exists in guild {guild}")
+        else:
+            await interaction.response.send_message(self.NO_PERMS_MSG)
+            logger.warning(
+                f"Unauthorized /lab-access command attempt by {interaction.user.name}"
+            )
+
+
+    @nextcord.slash_command(name="member",description="Make user a member and give lab access if necessary",guild_ids=serverIdList)
+    async def member(self, interaction: nextcord.Interaction, account_name: str):
+        logger.info(
+            f"Received /member command from {interaction.user.name}: account_name={account_name}"
+        )
+        role = get(interaction.user.roles, name=self.ROLE_FOR_ADMIN_PERMS)
+
+        if role:
+            await interaction.response.defer()
+            guild = interaction.guild
+            subject = guild.get_member_named(account_name)
+            if not subject is None:
+                friend_role = nextcord.utils.get(subject.roles, name="Friends")
+                member_role = nextcord.utils.get(subject.roles, name="Members")
+                if friend_role:
+                    await subject.remove_roles(friend_role)
+                if not member_role:
+                    await subject.add_roles(member_role)
+                try:
+                    citadel_client = ClientMeta(globals.config.citadel.ip, verify_ssl=globals.config.citadel.verify_ssl)
+                    citadel_client.login(globals.config.citadel.username, globals.config.citadel.password)
+                except Exception as e:
+                    await interaction.followup.send("Unable to connect to citadel")
+                    return
+                user = citadel_client.user_find(o_displayname=subject.name)['result']
+                if len(user) == 0:
+                    output_channel = guild.get_channel(interaction.channel_id)
+                    if output_channel is None:
+                        await interaction.followup.send("Could not get output channel")
+                        logger.warning("Could not get output channel")
+                    dm_channel = subject.dm_channel
+                    if dm_channel is None:
+                        dm_channel = await subject.create_dm()
+                        logger.info(f"Created DM Channel for {account_name}")
+                    asyncio.create_task(utils.dm_subject(self.client, dm_channel, subject, output_channel, member=True))
+                    await interaction.followup.send(f"Roles changed for user {account_name}\nDM sent to {account_name}")
+                    logger.info(f"{account_name} made a Member\nDM sent to {account_name}")
+                else:
+                    if not "cif_full_members" in user[0]['memberof_group']:
+                        citadel_client.group_add_member(a_cn="cif_full_members", o_user=user[0]['uid'][0])
+                        logger.info(f"User {user[0]['uid'][0]} moved to cif_full_members in citadel")
+                    await interaction.followup.send(f"{account_name} made a Member")
+                    logger.info(f"{account_name} made a Member")
+                citadel_client.logout()
+            else:
+                await interaction.followup.send(f"No user with account name {account_name} exists in guild {guild}")
+                logger.warning(f"No user with account name {account_name} exists in guild {guild}")
+        else:
+            await interaction.response.send_message(self.NO_PERMS_MSG)
+            logger.warning(
+                f"Unauthorized /member command attempt by {interaction.user.name}"
+            )
+
+    @nextcord.slash_command(name="remove-member", description="Removes Member role in discord and removes lab account from cif_full_members group if possible",
+                            guild_ids=serverIdList)
+    async def remove_member(self, interaction: nextcord.Interaction, account_name: str):
+        logger.info(
+            f"Received /remove-member command from {interaction.user.name}: account_name={account_name}"
+        )
+        role = get(interaction.user.roles, name=self.ROLE_FOR_ADMIN_PERMS)
+
+        if role:
+            await interaction.response.defer()
+            guild = interaction.guild
+            subject = guild.get_member_named(account_name)
+            if not subject is None:
+                output = utils.remove_member(subject, guild)
+                await interaction.followup.send(output)
+            else:
+                await interaction.followup.send(f"No user with account name {account_name} exists in guild {guild}")
+                logger.warning(f"No user with account name {account_name} exists in guild {guild}")
+        else:
+            await interaction.response.send_message(self.NO_PERMS_MSG)
+            logger.warning(
+                f"Unauthorized /member command attempt by {interaction.user.name}"
+            )
+
+    @nextcord.slash_command(name="update-members", description="Deactivates graduated citadel accounts and updates discord roles based on citadel",
+                            guild_ids=serverIdList)
+    async def update_members(self, interaction: nextcord.Interaction):
+        logger.info(
+            f"Received /update-members command from {interaction.user.name}"
+        )
+        role = get(interaction.user.roles, name=self.ROLE_FOR_ADMIN_PERMS)
+
+        if role:
+            await interaction.response.defer()
+            current_date = date.today()
+            output = await utils.update_members(interaction.guild, current_date)
+            await interaction.followup.send(output)
+        else:
+            await interaction.response.send_message(self.NO_PERMS_MSG)
+            logger.warning(
+                f"Unauthorized /update-members command attempt by {interaction.user.name}"
             )
 
 
