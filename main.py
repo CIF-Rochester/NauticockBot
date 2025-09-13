@@ -55,7 +55,9 @@ client = commands.Bot(intents=intents)
 
 initial_extensions = []
 
-for filename in os.listdir("./cogs"):
+print(SCRIPT_PATH)
+COG_PATH = os.path.join(SCRIPT_PATH, 'cogs')
+for filename in os.listdir(COG_PATH):
     if filename.endswith(".py"):
         initial_extensions.append("cogs." + filename[:-3])
 

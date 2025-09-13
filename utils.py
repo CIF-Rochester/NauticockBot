@@ -1,10 +1,7 @@
 import asyncio
 import json
 from datetime import datetime, date
-from enum import member
-from math import nextafter
 
-import discord
 import nextcord
 import paramiko
 import logging
@@ -113,7 +110,7 @@ def ssh_print_server(timestamp: str, all: bool) -> bool:
     finally:
         client.close()
 
-async def ssh_vicuna(user: Member, prompt: str, channel: GuildChannel, reply_message: Message):
+async def ssh_vicuna(user: Member, prompt: str, channel: GuildChannel, reply_message: Message, update: str):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -123,23 +120,32 @@ async def ssh_vicuna(user: Member, prompt: str, channel: GuildChannel, reply_mes
             username=globals.config.vicuna.username,
             password=globals.config.vicuna.password,
         )
-        command = globals.config.vicuna.command + f" --user {user.name} --prompt \"{prompt}\" --channel {channel.id}"
+        prompt_file = f"{str(datetime.now()).replace(' ', '_')}.txt"
+        command = f"echo \"{prompt}\" >> /home/cifadmin/Desktop/CIF-AI/inputs/{prompt_file}"
+        retrieval_command = f"cat /home/cifadmin/Desktop/CIF-AI/outputs/{prompt_file}"
+        # command = globals.config.vicuna.command + f" --user {user.name} --prompt \"{prompt}\" --channel {channel.id} --update_embeddings {update_embeddings}"
         logger.info(f"Executing command on {globals.config.vicuna.ip}: {command}")
-        stdin, stdout, stderr = client.exec_command(command, timeout=300)
+        stdin, stdout, stderr = client.exec_command(command, timeout=30)
+        err = stderr.read().decode("utf-8")
+        if err:
+            logger.error(f"Unable to create prompt file {prompt_file}: \n{err}")
+            await reply_message.edit(f"Unable to create prompt file {prompt_file}")
+            return
+        stdin, stdout, stderr = client.exec_command(retrieval_command, timeout=30)
         output = stdout.read().decode("utf-8")
         error = stderr.read().decode("utf-8")
-        if error:
-            logger.error(f"Command error: \n{error}")
-            await reply_message.edit("Error: " + error)
-            return
-        if output:
-            output = output.replace("\\\\n", '\n').replace("\\n", '\n')
-            logger.info(f"Command output: \n{output}")
-            await reply_message.edit(output)
-            logger.info(f"Responded to prompt")
-            return
-        await reply_message.edit("No data")
-        logger.info(f"Failed with no data")
+        n = 0
+        while error:
+            logger.info(update + " ".join(["." for i in range(n % 6)]))
+            await reply_message.edit(update + " ".join(["." for i in range(n % 6)]))
+            stdin, stdout, stderr = client.exec_command(retrieval_command, timeout=30)
+            output = stdout.read().decode("utf-8")
+            error = stderr.read().decode("utf-8")
+            n += 1
+        if not output:
+            await reply_message.edit("No output")
+        await reply_message.edit(output)
+        client.exec_command(f"rm /home/cifadmin/Desktop/CIF-AI/outputs/{prompt_file}")
         return
     except Exception as e:
         logger.error("SSH connection or command execution failed", exc_info=e)
@@ -232,7 +238,7 @@ async def create_account(subject: Member, dm_channel: DMChannel, output_channel:
         return 1
     try:
         full_name = first_name + " " + last_name
-        citadel_client.user_add(a_uid=netid, o_givenname=first_name, o_sn=last_name, o_cn = full_name, o_displayname=subject.name, o_employeenumber=id, o_employeetype=lcc, o_userpassword='cif314!', o_userclass=class_year)
+        citadel_client.user_add(a_uid=netid, o_givenname=first_name, o_sn=last_name, o_cn = full_name, o_street=subject.name, o_employeenumber=id, o_employeetype=lcc, o_userpassword='cif314!', o_userclass=class_year)
         logger.info(f"Created lab account for {subject.name}")
         if member:
             citadel_client.group_add_member(a_cn="cif_full_members", o_user=netid)
@@ -250,7 +256,7 @@ async def create_account(subject: Member, dm_channel: DMChannel, output_channel:
 
 async def dm_subject(client: Client, dm_channel: DMChannel, subject: nextcord.Member, output_channel: GuildChannel, member: bool = False):
     if member:
-        opening_message = f'Dear {subject.name},\n As a CIF member, you are entitled to a CIF lab membership.  If you believe you have received this in error, please contact a CIF Tech Director and ignore this message.  Otherwise, even if you have no interest in the lab, please answer a few questions as this data helps CIF automate a number of different processes.  All responses should contain the relevant information, nothing more, and be made within 24 hours.'
+        opening_message = f'Dear {subject.name},\n As a CIF member, you are entitled to a CIF lab membership.  If you believe you have received this in error, please contact a CIF Tech Director and ignore this message.  Otherwise, even if you have no interest in the lab, please answer a few questions as this data helps CIF keep accurate records and automate a number of different processes.  All responses should contain the relevant information, nothing more, and be made within 24 hours.'
     else:
         opening_message = f'Dear {subject.name},\n You have demonstrated an interest in becoming a CIF lab member.  If you believe you have received this in error, please contact a CIF Tech Director and ignore this message.  Otherwise, please answer a few questions.  All responses should contain the relevant information, nothing more, and be made within 24 hours.'
     await dm_channel.send(opening_message)
@@ -374,7 +380,9 @@ async def update_members(guild: Guild, current_date: date) -> str:
     for user in users:
         try:
             updated_citadel = False
-            subject = guild.get_member_named(user['displayname'][0])
+            if not 'street' in user:
+                continue
+            subject = guild.get_member_named(user['street'][0])
             uid = user['uid'][0]
             graduated = has_graduated(user, current_date)
             locked = user['nsaccountlock']
@@ -443,7 +451,7 @@ async def remove_member(subject: Member, guild: Guild):
         citadel_client.login(globals.config.citadel.username, globals.config.citadel.password)
     except Exception as e:
         return "Unable to connect to citadel"
-    user = citadel_client.user_find(o_displayname=subject.name)['result']
+    user = citadel_client.user_find(o_street=subject.name)['result']
     if len(user) > 0:
         citadel_client.group_remove_member(a_cn="cif_full_members", o_user=user[0]['uid'][0])
     citadel_client.logout()

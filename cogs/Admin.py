@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from enum import member
 
 import nextcord
 from discord.types.emoji import Emoji
@@ -287,16 +286,29 @@ class Admin(commands.Cog):
             logger.info(f"Reacted to {message.author.name}'s message with :cif")
             await message.add_reaction("<:cif:819374166082846730>")
         if "/ask" in message.content:
-            prompt = message.content[(message.content.index("/ask") + 4):]
+            prompt = message.content[(message.content.index("/ask") + 4):].strip()
             logger.info(
                 f"Received /ask command from {message.author.name}: prompt={prompt}"
             )
             role = get(message.author.roles, name=self.ROLE_FOR_ADMIN_PERMS)
 
             if role:
+                if not prompt:
+                    await message.reply("Prompt cannot be empty")
+                    return
+                update_embeddings = False
+                if prompt[:2] == '/u':
+                    update_embeddings = True
+                update = ''
+                if update_embeddings:
+                    update += "Updating Embeddings"
+                if prompt and prompt != '/u':
+                    if update:
+                        update += ", "
+                    update += "Thinking"
                 prompt = prompt.replace('\\', '\\\\').replace('\n', '\\n').replace('\"', '\\"').replace('\'', '\\\'')
-                reply_message = await message.reply("Thinking . . . ")
-                asyncio.create_task(utils.ssh_vicuna(message.author, prompt, message.author.guild.get_channel(message.channel.id), reply_message))
+                reply_message = await message.reply(update)
+                await asyncio.create_task(utils.ssh_vicuna(message.author, prompt, message.author.guild.get_channel(message.channel.id), reply_message, update=update))
             else:
                 logger.warning(
                     f"Unauthorized /ask command attempt by {message.author.name}"
@@ -348,19 +360,29 @@ class Admin(commands.Cog):
             guild = interaction.guild
             subject = guild.get_member_named(account_name)
             if not subject is None:
+                logger.info(f"Found subject {subject}")
                 friend_role = nextcord.utils.get(subject.roles, name="Friends")
+                logger.info(f"Retrieved role {friend_role}")
                 member_role = nextcord.utils.get(subject.roles, name="Members")
+                logger.info(f"Retrieved role {member_role}")
+                static_member_role = nextcord.utils.get(guild.roles, name="Members")
+                logger.info(f"Found following roles: {friend_role}, {member_role}")
                 if friend_role:
+                    logger.info("Removing Friends role")
                     await subject.remove_roles(friend_role)
                 if not member_role:
-                    await subject.add_roles(member_role)
+                    logger.info("Adding Members Role")
+                    await subject.add_roles(static_member_role)
+                else:
+                    logger.info("No roles need to be changed")
                 try:
+                    logger.info("Attempting to SSH into Citadel")
                     citadel_client = ClientMeta(globals.config.citadel.ip, verify_ssl=globals.config.citadel.verify_ssl)
                     citadel_client.login(globals.config.citadel.username, globals.config.citadel.password)
                 except Exception as e:
                     await interaction.followup.send("Unable to connect to citadel")
                     return
-                user = citadel_client.user_find(o_displayname=subject.name)['result']
+                user = citadel_client.user_find(o_street=subject.name)['result']
                 if len(user) == 0:
                     output_channel = guild.get_channel(interaction.channel_id)
                     if output_channel is None:
