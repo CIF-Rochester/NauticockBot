@@ -136,7 +136,6 @@ async def ssh_vicuna(user: Member, prompt: str, channel: GuildChannel, reply_mes
         error = stderr.read().decode("utf-8")
         n = 0
         while error:
-            logger.info(update + " ".join(["." for i in range(n % 6)]))
             await reply_message.edit(update + " ".join(["." for i in range(n % 6)]))
             stdin, stdout, stderr = client.exec_command(retrieval_command, timeout=30)
             output = stdout.read().decode("utf-8")
@@ -253,7 +252,6 @@ async def create_account(subject: Member, dm_channel: DMChannel, output_channel:
     finally:
         citadel_client.logout()
 
-
 async def dm_subject(client: Client, dm_channel: DMChannel, subject: nextcord.Member, output_channel: GuildChannel, member: bool = False):
     if member:
         opening_message = f'Dear {subject.name},\n As a CIF member, you are entitled to a CIF lab membership.  If you believe you have received this in error, please contact a CIF Tech Director and ignore this message.  Otherwise, even if you have no interest in the lab, please answer a few questions as this data helps CIF keep accurate records and automate a number of different processes.  All responses should contain the relevant information, nothing more, and be made within 24 hours.'
@@ -330,6 +328,37 @@ async def dm_subject(client: Client, dm_channel: DMChannel, subject: nextcord.Me
         lab_member_role = nextcord.utils.get(output_channel.guild.roles, name="Lab Members")
         await subject.add_roles(lab_member_role)
 
+async def prompt_email(client: Client, subject: Member, dm_channel: DMChannel):
+    email = await get_response(client, subject, timeout=604800)
+    if email is None:
+        return None
+    while not '@' in email or not '.' in email:
+        await dm_channel.send(f'\"{email}\" does not appear to be a valid email.  Try again')
+        email = await get_response(client, subject)
+        if email is None:
+            return None
+    return email
+
+async def dm_alumni(client: Client, citadel_client: ClientMeta, dm_channel: DMChannel, subject: nextcord.Member, output_channel: GuildChannel, user: dict):
+    opening_message = f"Dear {user['cn'][0]},\nCongratulations on your recent UofR graduation!  CIF would like to maintain a strong relationship with our alumni if possible.  If you would like CIF to remain in touch with you in the future, please enter your email below within 1 week.  This is completely optional."
+    await dm_channel.send(opening_message)
+    email = await prompt_email(client, subject, dm_channel)
+    if email is None:
+        await timeout(subject, dm_channel, output_channel)
+        return
+    closing_message = f'Thank you for providing your email address.  CIF will be in touch.'
+    try:
+        citadel_client.login(globals.config.citadel.username, globals.config.citadel.password)
+        citadel_client.user_mod(a_uid=user['uid'][0], o_mail=email)
+        await dm_channel.send(closing_message)
+        logger.info(f"Updated user f{user['uid'][0]} with email {email}")
+        await output_channel.send(f"{user['cn'][0]} updated their email")
+    except Exception as e:
+        await dm_channel.send("An error has occured when updating your email in Citadel.  Please contact a Tech Director")
+        await output_channel.send(f"Unable to update email {email} for user {user['cn'][0]}.  Check logs for more details")
+        logger.error(f"Failed to update user {user['cn'][0]} with email {email}: \n {e}")
+
+
 def get_all_accounts(citadel_client: ClientMeta):
     try:
         logger.info(f'Successfully connected to citadel')
@@ -364,7 +393,7 @@ async def set_primary_role(subject: Member, role: Role, friend_role: Role, membe
         updated_discord = True
     return updated_discord
 
-async def update_members(guild: Guild, current_date: date) -> str:
+async def update_members(client: Client, guild: Guild, current_date: date, output_channel: GuildChannel) -> str:
     try :
         citadel_client = ClientMeta(globals.config.citadel.ip, verify_ssl=globals.config.citadel.verify_ssl)
         citadel_client.login(globals.config.citadel.username, globals.config.citadel.password)
@@ -381,8 +410,9 @@ async def update_members(guild: Guild, current_date: date) -> str:
         try:
             updated_citadel = False
             if not 'street' in user:
-                continue
-            subject = guild.get_member_named(user['street'][0])
+                subject = None
+            else:
+                subject = guild.get_member_named(user['street'][0])
             uid = user['uid'][0]
             graduated = has_graduated(user, current_date)
             locked = user['nsaccountlock']
@@ -400,6 +430,13 @@ async def update_members(guild: Guild, current_date: date) -> str:
                 if not "cif_alumni" in groups:
                     citadel_client.group_add_member(a_cn="cif_alumni", o_user=uid)
                     updated_citadel = True
+                if not subject is None and not 'cif_full_members' in groups:
+                    dm_channel = subject.dm_channel
+                    if dm_channel is None:
+                        dm_channel = await subject.create_dm()
+                        logger.info(f"Created DM Channel for {user['street'][0]}")
+                    asyncio.create_task(dm_alumni(client, citadel_client, dm_channel, subject, output_channel, user))
+                    output += f"DMed user {uid} for email\n"
             if updated_citadel:
                 logger.info(f"Updated user {uid} in citadel")
             updated_discord = False
@@ -456,3 +493,28 @@ async def remove_member(subject: Member, guild: Guild):
         citadel_client.group_remove_member(a_cn="cif_full_members", o_user=user[0]['uid'][0])
     citadel_client.logout()
     return f"Successfully removed {subject.name} from member list"
+
+def get_emails(friends=True, members=True, alumni=True):
+    try :
+        citadel_client = ClientMeta(globals.config.citadel.ip, verify_ssl=globals.config.citadel.verify_ssl)
+        citadel_client.login(globals.config.citadel.username, globals.config.citadel.password)
+    except Exception as e:
+        return "Unable to connect to citadel"
+    users = get_all_accounts(citadel_client)
+    output = ''
+    for user in users:
+        groups = user['memberof_group']
+        if not 'mail' in user:
+            continue
+        if 'Service' in user['sn'][0]:
+            continue
+        email = user['mail'][0]
+        if 'users' in groups and not 'cif_full_members' in groups and friends:
+            output += f'{email}\n'
+        elif 'cif_full_members' in groups and members:
+            output += f'{email}\n'
+        elif 'cif_alumni' in groups and alumni and not "@u.rochester.edu" in email:
+            output += f'{email}\n'
+    if not output:
+        output = "No emails retrieved"
+    return output

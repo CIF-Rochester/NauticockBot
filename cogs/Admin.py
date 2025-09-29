@@ -446,7 +446,26 @@ class Admin(commands.Cog):
         if role:
             await interaction.response.defer()
             current_date = date.today()
-            output = await utils.update_members(interaction.guild, current_date)
+            guild = interaction.guild
+            output_channel = guild.get_channel(interaction.channel_id)
+            output = await utils.update_members(self.client, guild, current_date, output_channel)
+            await interaction.followup.send(output)
+        else:
+            await interaction.response.send_message(self.NO_PERMS_MSG)
+            logger.warning(
+                f"Unauthorized /update-members command attempt by {interaction.user.name}"
+            )
+
+    @nextcord.slash_command(name="emails", description="Retrieves desired emails from citadel", guild_ids=serverIdList)
+    async def emails(self, interaction: nextcord.Interaction, friends: bool, members: bool, alumni: bool):
+        logger.info(
+            f"Received /update-members command from {interaction.user.name}"
+        )
+        role = get(interaction.user.roles, name=self.ROLE_FOR_ADMIN_PERMS)
+
+        if role:
+            await interaction.response.defer()
+            output = utils.get_emails(friends, members, alumni)
             await interaction.followup.send(output)
         else:
             await interaction.response.send_message(self.NO_PERMS_MSG)
